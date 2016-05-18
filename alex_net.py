@@ -26,7 +26,8 @@ class AlexNet(object):
         # 'rand' is a random array used for random cropping/mirroring of data
         x = T.ftensor4('x')
         y = T.lvector('y')
-        rand = T.fvector('rand')
+        if flag_datalayer:
+            rand = T.fvector('rand')
 
         print '... building the model'
         self.layers = []
@@ -148,12 +149,14 @@ class AlexNet(object):
             self.outLayer = self.cost
         else:
             self.outLayer = self.layers[useLayers-1]
+        self.flag_datalayer = flag_datalayer
 
 
 def compile_models(model, config, flag_top_5=False):
     x = model.x
     y = model.y
-    rand = model.rand
+    if model.flag_datalayer:
+        rand = model.rand
     weight_types = model.weight_types
 
     if model.costLayer:
@@ -162,7 +165,6 @@ def compile_models(model, config, flag_top_5=False):
     outLayer = model.outLayer
     params = model.params
     batch_size = model.batch_size
-    imgDims = config['imgDims']
 
     mu = config['momentum']
     eta = config['weight_decay']
@@ -178,7 +180,9 @@ def compile_models(model, config, flag_top_5=False):
     if config['use_data_layer']:
         imgWidth, imgHeight = [256]*2
     else:
-        imgWidth, imgHeight = imgDims  #this is a user defined input and need not be fixed, as conv layers can act on arbitrarily sized images
+        #confirm, check: width, height  or height, width
+        imgWidth = config['imgWidth']  #this is a user defined input and need not be fixed, as conv layers can act on arbitrarily sized images
+        imgHeight = config['imgHeight']
 
     shared_x = theano.shared(np.zeros((3, imgWidth, imgHeight, batch_size),  dtype=theano.config.floatX),    borrow=True)
     shared_y = theano.shared(np.zeros((batch_size,),                         dtype=int),                     borrow=True)
@@ -218,21 +222,28 @@ def compile_models(model, config, flag_top_5=False):
 
     # Define Theano Functions
 
-    train_model = theano.function([], outLayer, updates=updates,
-                                  givens=[(x, shared_x), (y, shared_y),   #update the batch (?)
+    if model.flag_datalayer:
+        trainGivens = [(x, shared_x), (y, shared_y),   #update the batch (?)
                                           (lr, learning_rate),
-                                          (rand, rand_arr)])
+                                          (rand, rand_arr)]
+        validateGivens = [(x, shared_x), (y, shared_y), (rand, rand_arr)]
+        trainErrGiven = [(x, shared_x), (y, shared_y), (rand, rand_arr)]
+    else:
+        trainGivens = [(x, shared_x), (y, shared_y),   #update the batch (?)
+                                          (lr, learning_rate)]
+        validateGivens = [(x, shared_x), (y, shared_y)]
+        trainErrGiven = [(x, shared_x), (y, shared_y)]
+
+    train_model = theano.function([], outLayer, updates=updates, givens=trainGivens)
 
     if model.costLayer:
         validate_outputs = [outLayer, errors]
         if flag_top_5:
             validate_outputs.append(errors_top_5)
 
-        validate_model = theano.function([], validate_outputs,
-                                     givens=[(x, shared_x), (y, shared_y),
-                                             (rand, rand_arr)])
+        validate_model = theano.function([], validate_outputs, givens=validateGivens)
 
-        train_error = theano.function([], errors, givens=[(x, shared_x), (y, shared_y), (rand, rand_arr)])
+        train_error = theano.function([], errors, givens=trainErrGiven)
     else:
         validate_model = None; train_error = None
 

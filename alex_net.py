@@ -19,6 +19,7 @@ class AlexNet(object):
         flag_datalayer = config['use_data_layer']
         lib_conv = config['lib_conv']
         useLayers = config['useLayers']
+        costLayer = config['costLayer']
 
         # ##################### BUILD NETWORK ##########################
         # allocate symbolic variables for the data
@@ -130,10 +131,11 @@ class AlexNet(object):
 
         # #################### NETWORK BUILT #######################
 
-        if useLayers >= 8:
+        if costLayer:
             self.cost = softmax_layer8.negative_log_likelihood(y)
             self.errors = softmax_layer8.errors(y)
             self.errors_top_5 = softmax_layer8.errors_top_x(y, 5)
+        self.output = self.layers[useLayers-1]
         self.params = params
         self.x = x
         self.y = y
@@ -141,6 +143,11 @@ class AlexNet(object):
         self.weight_types = weight_types
         self.batch_size = batch_size
         self.useLayers = useLayers
+        self.costLayer = costLayer
+        if costLayer:
+            self.outLayer = self.cost
+        else:
+            self.outLayer = self.layers[useLayers-1]
 
 
 def compile_models(model, config, flag_top_5=False):
@@ -149,17 +156,19 @@ def compile_models(model, config, flag_top_5=False):
     rand = model.rand
     weight_types = model.weight_types
 
-    cost = model.cost
+    if model.costLayer:
+        cost = model.cost
+        errors = model.errors
+        errors_top_5 = model.errors_top_5
     params = model.params
-    errors = model.errors
-    errors_top_5 = model.errors_top_5
     batch_size = model.batch_size
 
     mu = config['momentum']
     eta = config['weight_decay']
 
     # create a list of gradients for all model parameters
-    grads = T.grad(cost, params)
+    grads = T.grad(model.outLayer, params)
+
     updates = []
 
     learning_rate = theano.shared(np.float32(config['learning_rate']))
@@ -172,18 +181,13 @@ def compile_models(model, config, flag_top_5=False):
 
     shared_x = theano.shared(np.zeros((3, raw_size, raw_size, batch_size),   dtype=theano.config.floatX),    borrow=True)
     shared_y = theano.shared(np.zeros((batch_size,),                         dtype=int),                     borrow=True)
-
     rand_arr = theano.shared(np.zeros(3,                                     dtype=theano.config.floatX),    borrow=True)
 
     vels = [theano.shared(param_i.get_value() * 0.) for param_i in params]
 
     if config['use_momentum']:
-
         assert len(weight_types) == len(params)
-
-        for param_i, grad_i, vel_i, weight_type in \
-                zip(params, grads, vels, weight_types):
-
+        for param_i, grad_i, vel_i, weight_type in zip(params, grads, vels, weight_types):
             if weight_type == 'W':
                 real_grad = grad_i + eta * param_i
                 real_lr = lr
@@ -214,7 +218,7 @@ def compile_models(model, config, flag_top_5=False):
     # Define Theano Functions
 
     train_model = theano.function([], cost, updates=updates,
-                                  givens=[(x, shared_x), (y, shared_y),
+                                  givens=[(x, shared_x), (y, shared_y),   #update the batch
                                           (lr, learning_rate),
                                           (rand, rand_arr)])
 

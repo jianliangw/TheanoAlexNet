@@ -34,8 +34,7 @@ class AlexNet(object):
         weight_types = []
 
         if flag_datalayer:
-            data_layer = DataLayer(input=x, image_shape=(3, 256, 256,
-                                                         batch_size),
+            data_layer = DataLayer(input=x, image_shape=(3, 256, 256, batch_size),
                                    cropsize=227, rand=rand, mirror=True,
                                    flag_rand=config['rand_crop'])
 
@@ -163,6 +162,7 @@ def compile_models(model, config, flag_top_5=False):
     outLayer = model.outLayer
     params = model.params
     batch_size = model.batch_size
+    imgDims = config['imgDims']
 
     mu = config['momentum']
     eta = config['weight_decay']
@@ -176,11 +176,11 @@ def compile_models(model, config, flag_top_5=False):
     lr = T.scalar('lr')  # symbolic learning rate
 
     if config['use_data_layer']:
-        raw_size = 256
+        imgWidth, imgHeight = [256]*2
     else:
-        raw_size = 227
+        imgWidth, imgHeight = imgDims  #this is a user defined input and need not be fixed, as conv layers can act on arbitrarily sized images
 
-    shared_x = theano.shared(np.zeros((3, raw_size, raw_size, batch_size),   dtype=theano.config.floatX),    borrow=True)
+    shared_x = theano.shared(np.zeros((3, imgWidth, imgHeight, batch_size),  dtype=theano.config.floatX),    borrow=True)
     shared_y = theano.shared(np.zeros((batch_size,),                         dtype=int),                     borrow=True)
     rand_arr = theano.shared(np.zeros(3,                                     dtype=theano.config.floatX),    borrow=True)
 

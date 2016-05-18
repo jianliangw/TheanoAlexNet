@@ -2,8 +2,6 @@ import os
 
 import numpy as np
 
-#wont need this function
-"""
 def save_weights(layers, weights_dir, epoch):
     for idx in range(len(layers)):
         if hasattr(layers[idx], 'W'):
@@ -24,7 +22,7 @@ def save_weights(layers, weights_dir, epoch):
         if hasattr(layers[idx], 'b1'):
             layers[idx].b1.save_weight(
                 weights_dir, 'b1' + '_' + str(idx) + '_' + str(epoch))
-"""
+
 
 def load_weights(layers, weights_dir, epoch):
     for idx in range(len(layers)):
@@ -48,8 +46,6 @@ def load_weights(layers, weights_dir, epoch):
                 weights_dir, 'b1' + '_' + str(idx) + '_' + str(epoch))
 
 
-#wont need these function
-"""
 def save_momentums(vels, weights_dir, epoch):
     for ind in range(len(vels)):
         np.save(os.path.join(weights_dir, 'mom_' + str(ind) + '_' + str(epoch)),
@@ -60,4 +56,3 @@ def load_momentums(vels, weights_dir, epoch):
     for ind in range(len(vels)):
         vels[ind].set_value(np.load(os.path.join(
             weights_dir, 'mom_' + str(ind) + '_' + str(epoch) + '.npy')))
-"""

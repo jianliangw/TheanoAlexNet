@@ -29,14 +29,11 @@ class Weight(object):
                 mean * np.ones(w_shape, dtype=theano.config.floatX))
 
         self.val = theano.shared(value=self.np_values)
-        
-        
-    #wont need this function
-    """
+
     def save_weight(self, dir, name):
         print 'weight saved: ' + name
         np.save(dir + name + '.npy', self.val.get_value())
-    """
+
 
     def load_weight(self, dir, name):
         print 'weight loaded: ' + name

@@ -139,7 +139,8 @@ class AlexNet(object):
         self.params = params
         self.x = x
         self.y = y
-        self.rand = rand
+        if flag_datalayer:
+            self.rand = rand
         self.weight_types = weight_types
         self.batch_size = batch_size
         self.useLayers = useLayers
@@ -157,9 +158,9 @@ def compile_models(model, config, flag_top_5=False):
     weight_types = model.weight_types
 
     if model.costLayer:
-        cost = model.cost
         errors = model.errors
         errors_top_5 = model.errors_top_5
+    outLayer = model.outLayer
     params = model.params
     batch_size = model.batch_size
 
@@ -217,21 +218,22 @@ def compile_models(model, config, flag_top_5=False):
 
     # Define Theano Functions
 
-    train_model = theano.function([], cost, updates=updates,
-                                  givens=[(x, shared_x), (y, shared_y),   #update the batch
+    train_model = theano.function([], outLayer, updates=updates,
+                                  givens=[(x, shared_x), (y, shared_y),   #update the batch (?)
                                           (lr, learning_rate),
                                           (rand, rand_arr)])
 
-    validate_outputs = [cost, errors]
-    if flag_top_5:
-        validate_outputs.append(errors_top_5)
+    if model.costLayer:
+        validate_outputs = [outLayer, errors]
+        if flag_top_5:
+            validate_outputs.append(errors_top_5)
 
-    validate_model = theano.function([], validate_outputs,
+        validate_model = theano.function([], validate_outputs,
                                      givens=[(x, shared_x), (y, shared_y),
                                              (rand, rand_arr)])
 
-    train_error = theano.function(
-        [], errors, givens=[(x, shared_x), (y, shared_y), (rand, rand_arr)])
+        train_error = theano.function([], errors, givens=[(x, shared_x), (y, shared_y), (rand, rand_arr)])
+    else:
+        validate_model = None; train_error = None
 
-    return (train_model, validate_model, train_error,
-            learning_rate, shared_x, shared_y, rand_arr, vels)
+        return (train_model, validate_model, train_error, learning_rate, shared_x, shared_y, rand_arr, vels)

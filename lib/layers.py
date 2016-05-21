@@ -150,6 +150,7 @@ class ConvPoolLayer(object):
 
         elif lib_conv == 'cudnn':
 
+            #http://benanne.github.io/2014/04/03/faster-convolutions-in-theano.html
             input_shuffled = input.dimshuffle(3, 0, 1, 2)  # c01b to bc01
             # in01out to outin01
             # print image_shape_shuffled

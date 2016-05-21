@@ -1,11 +1,11 @@
 # If want to input None, use !!null
 
 #new additions
-useLayers: 8
-costLayer: False
+useLayers: 3
 imgWidth: 227
 imgHeight: 227
 batch_size: 256
+initWeights: True
 
 
 # Resume Training, start from scratch or resume training

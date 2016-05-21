@@ -1,6 +1,6 @@
 #import sys
 #sys.path.append('./lib')
-from alex_net import AlexNet, compile_models
+from alex_net import AlexNet
 import yaml
 import scipy.misc
 import matplotlib.pyplot as plt
@@ -15,5 +15,23 @@ img = scipy.misc.imresize(img, (config['imgHeight'], config['imgWidth']))
 #plt.imshow(img)
 #plt.show()
 
+
+
 alexnetModel = AlexNet(config)
-(train_model, validate_model, train_error, learning_rate, shared_x, shared_y, rand_arr, vels) = compile_models(alexnetModel, config)
+
+print 'done'
+
+
+"""
+import theano.tensor as T
+import theano, numpy as np
+
+params = theano.shared(value=np.cast[theano.config.floatX](2 * np.ones((1,2), dtype=theano.config.floatX)))
+x = T.dvector()
+f = T.sum(T.dot(params, x))
+print f
+g = T.grad(f, x)
+print g
+fprime = theano.function([x], g)
+print fprime([1,2])
+"""

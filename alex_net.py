@@ -6,7 +6,7 @@ import theano.tensor as T
 
 import numpy as np
 
-from layers import DataLayer, ConvPoolLayer, DropoutLayer, FCLayer, SoftmaxLayer
+from layers import ConvPoolLayer, DropoutLayer, FCLayer, SoftmaxLayer
 
 
 class AlexNet(object):
@@ -16,36 +16,26 @@ class AlexNet(object):
         self.config = config
 
         batch_size = config['batch_size']
-        flag_datalayer = config['use_data_layer']
         lib_conv = config['lib_conv']
         useLayers = config['useLayers']
-        costLayer = config['costLayer']
+        imgWidth = config['imgWidth']
+        imgHeight = config['imgHeight']
+        initWeights = config['initWeights']  #if we wish to initialize alexnet with some weights. #need to make changes in layers.py to accept initilizing weights
 
         # ##################### BUILD NETWORK ##########################
         # allocate symbolic variables for the data
         # 'rand' is a random array used for random cropping/mirroring of data
         x = T.ftensor4('x')
-        y = T.lvector('y')
-        if flag_datalayer:
-            rand = T.fvector('rand')
+        #y = T.lvector('y')
 
         print '... building the model'
         self.layers = []
         params = []
         weight_types = []
 
-        if flag_datalayer:
-            data_layer = DataLayer(input=x, image_shape=(3, 256, 256, batch_size),
-                                   cropsize=227, rand=rand, mirror=True,
-                                   flag_rand=config['rand_crop'])
-
-            layer1_input = data_layer.output
-        else:
-            layer1_input = x
-
         if useLayers >= 1:
-            convpool_layer1 = ConvPoolLayer(input=layer1_input,
-                                        image_shape=(3, 227, 227, batch_size), 
+            convpool_layer1 = ConvPoolLayer(input=x,
+                                        image_shape=(3, imgHeight, imgWidth, batch_size), 
                                         filter_shape=(3, 11, 11, 96), 
                                         convstride=4, padsize=0, group=1, 
                                         poolsize=3, poolstride=2, 
@@ -131,120 +121,19 @@ class AlexNet(object):
 
         # #################### NETWORK BUILT #######################
 
-        if costLayer:
-            self.cost = softmax_layer8.negative_log_likelihood(y)
-            self.errors = softmax_layer8.errors(y)
-            self.errors_top_5 = softmax_layer8.errors_top_x(y, 5)
         self.output = self.layers[useLayers-1]
         self.params = params
         self.x = x
-        self.y = y
-        if flag_datalayer:
-            self.rand = rand
+        #self.y = y
         self.weight_types = weight_types
         self.batch_size = batch_size
         self.useLayers = useLayers
-        self.costLayer = costLayer
-        if costLayer:
-            self.outLayer = self.cost
-        else:
-            self.outLayer = self.layers[useLayers-1]
-        self.flag_datalayer = flag_datalayer
+        self.outLayer = self.layers[useLayers-1]
 
-
-def compile_models(model, config, flag_top_5=False):
-    x = model.x
-    y = model.y
-    if model.flag_datalayer:
-        rand = model.rand
-    weight_types = model.weight_types
-
-    if model.costLayer:
-        errors = model.errors
-        errors_top_5 = model.errors_top_5
-    outLayer = model.outLayer
-    params = model.params
-    batch_size = model.batch_size
-
-    mu = config['momentum']
-    eta = config['weight_decay']
-
-    # create a list of gradients for all model parameters
-    grads = T.grad(model.outLayer, params)
-
-    updates = []
-
-    learning_rate = theano.shared(np.float32(config['learning_rate']))
-    lr = T.scalar('lr')  # symbolic learning rate
-
-    if config['use_data_layer']:
-        imgWidth, imgHeight = [256]*2
-    else:
-        #confirm, check: width, height  or height, width
-        imgWidth = config['imgWidth']  #this is a user defined input and need not be fixed, as conv layers can act on arbitrarily sized images
-        imgHeight = config['imgHeight']
-
-    shared_x = theano.shared(np.zeros((3, imgWidth, imgHeight, batch_size),  dtype=theano.config.floatX),    borrow=True)
-    shared_y = theano.shared(np.zeros((batch_size,),                         dtype=int),                     borrow=True)
-    rand_arr = theano.shared(np.zeros(3,                                     dtype=theano.config.floatX),    borrow=True)
-
-    vels = [theano.shared(param_i.get_value() * 0.) for param_i in params]
-
-    if config['use_momentum']:
-        assert len(weight_types) == len(params)
-        for param_i, grad_i, vel_i, weight_type in zip(params, grads, vels, weight_types):
-            if weight_type == 'W':
-                real_grad = grad_i + eta * param_i
-                real_lr = lr
-            elif weight_type == 'b':
-                real_grad = grad_i
-                real_lr = 2. * lr
-            else:
-                raise TypeError("Weight Type Error")
-
-            if config['use_nesterov_momentum']:
-                vel_i_next = mu ** 2 * vel_i - (1 + mu) * real_lr * real_grad
-            else:
-                vel_i_next = mu * vel_i - real_lr * real_grad
-
-            updates.append((vel_i, vel_i_next))
-            updates.append((param_i, param_i + vel_i_next))
-
-    else:
-        for param_i, grad_i, weight_type in zip(params, grads, weight_types):
-            if weight_type == 'W':
-                updates.append((param_i,
-                                param_i - lr * grad_i - eta * lr * param_i))
-            elif weight_type == 'b':
-                updates.append((param_i, param_i - 2 * lr * grad_i))
-            else:
-                raise TypeError("Weight Type Error")
-
-    # Define Theano Functions
-
-    if model.flag_datalayer:
-        trainGivens = [(x, shared_x), (y, shared_y),   #update the batch (?)
-                                          (lr, learning_rate),
-                                          (rand, rand_arr)]
-        validateGivens = [(x, shared_x), (y, shared_y), (rand, rand_arr)]
-        trainErrGiven = [(x, shared_x), (y, shared_y), (rand, rand_arr)]
-    else:
-        trainGivens = [(x, shared_x), (y, shared_y),   #update the batch (?)
-                                          (lr, learning_rate)]
-        validateGivens = [(x, shared_x), (y, shared_y)]
-        trainErrGiven = [(x, shared_x), (y, shared_y)]
-
-    train_model = theano.function([], outLayer, updates=updates, givens=trainGivens)
-
-    if model.costLayer:
-        validate_outputs = [outLayer, errors]
-        if flag_top_5:
-            validate_outputs.append(errors_top_5)
-
-        validate_model = theano.function([], validate_outputs, givens=validateGivens)
-
-        train_error = theano.function([], errors, givens=trainErrGiven)
-    else:
-        validate_model = None; train_error = None
-
-        return (train_model, validate_model, train_error, learning_rate, shared_x, shared_y, rand_arr, vels)
+        self.forwardFunction = theano.function([self.x], [self.outLayer.output])
+        
+    def forward(self, inp):
+        return self.forwardFunction(inp)
+        
+    #def train(self, updates, givens):
+    #    self.trainModel = theano.function([], self.outLayer, updates=updates, givens=givens)

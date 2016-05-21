@@ -6,6 +6,8 @@ imgWidth: 227
 imgHeight: 227
 batch_size: 256
 initWeights: True
+weightsDir: '/scratch0/sem4/domainAdaptation/code/alexnet/theanoAlexnet/theano_alexnet-master/pretrained/alexnet/parameters_releasing/'
+weightFileTag: '_65'
 
 
 # Resume Training, start from scratch or resume training

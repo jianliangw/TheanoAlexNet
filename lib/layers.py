@@ -19,14 +19,16 @@ rng = np.random.RandomState(23455)
 
 class Weight(object):
 
-    def __init__(self, w_shape, mean=0, std=0.01):
+    def __init__(self, w_shape, mean=0, std=0.01, initWeights = False, weightsDir = '', weightFile= ''):
         super(Weight, self).__init__()
-        if std != 0:
-            self.np_values = np.asarray(
-                rng.normal(mean, std, w_shape), dtype=theano.config.floatX)
-        else:
-            self.np_values = np.cast[theano.config.floatX](
-                mean * np.ones(w_shape, dtype=theano.config.floatX))
+        if initWeights:
+            self.np_values = np.load(weightsDir + weightFile + '.npy')
+            self.val = theano.shared(value=self.np_values)
+        else:  #random init
+            if std != 0:
+                self.np_values = np.asarray(rng.normal(mean, std, w_shape), dtype=theano.config.floatX)
+            else:
+                self.np_values = np.cast[theano.config.floatX](mean * np.ones(w_shape, dtype=theano.config.floatX))
 
         self.val = theano.shared(value=self.np_values)
 
@@ -41,42 +43,11 @@ class Weight(object):
         self.val.set_value(self.np_values)
 
 
-class DataLayer(object):
-
-    def __init__(self, input, image_shape, cropsize, rand, mirror, flag_rand):
-        '''
-        The random mirroring and cropping in this function is done for the
-        whole batch.
-        '''
-
-        # trick for random mirroring
-        mirror = input[:, :, ::-1, :]
-        input = T.concatenate([input, mirror], axis=0)
-
-        # crop images
-        center_margin = (image_shape[2] - cropsize) / 2
-
-        if flag_rand:
-            mirror_rand = T.cast(rand[2], 'int32')
-            crop_xs = T.cast(rand[0] * center_margin * 2, 'int32')
-            crop_ys = T.cast(rand[1] * center_margin * 2, 'int32')
-        else:
-            mirror_rand = 0
-            crop_xs = center_margin
-            crop_ys = center_margin
-
-        self.output = input[mirror_rand * 3:(mirror_rand + 1) * 3, :, :, :]
-        self.output = self.output[
-            :, crop_xs:crop_xs + cropsize, crop_ys:crop_ys + cropsize, :]
-
-        print "data layer with shape_in: " + str(image_shape)
-
-
 class ConvPoolLayer(object):
 
     def __init__(self, input, image_shape, filter_shape, convstride, padsize,
                  group, poolsize, poolstride, bias_init, lrn=False,
-                 lib_conv='cudnn',
+                 lib_conv='cudnn', initWeights = False, weightsDir = '', weightFiles = []
                  ):
         '''
         lib_conv can be cudnn (recommended)or cudaconvnet
@@ -99,17 +70,17 @@ class ConvPoolLayer(object):
             self.lrn_func = CrossChannelNormalization()
 
         if group == 1:
-            self.W = Weight(self.filter_shape)
-            self.b = Weight(self.filter_shape[3], bias_init, std=0)
+            self.W = Weight(self.filter_shape, initWeights=initWeights, weightsDir=weightsDir, weightFile=weightFiles[0])
+            self.b = Weight(self.filter_shape[3], bias_init, std=0, initWeights=initWeights, weightsDir=weightsDir, weightFile=weightFiles[1])
         else:
             self.filter_shape[0] = self.filter_shape[0] / 2
             self.filter_shape[3] = self.filter_shape[3] / 2
             self.image_shape[0] = self.image_shape[0] / 2
             self.image_shape[3] = self.image_shape[3] / 2
-            self.W0 = Weight(self.filter_shape)
-            self.W1 = Weight(self.filter_shape)
-            self.b0 = Weight(self.filter_shape[3], bias_init, std=0)
-            self.b1 = Weight(self.filter_shape[3], bias_init, std=0)
+            self.W0 = Weight(self.filter_shape, initWeights=initWeights, weightsDir=weightsDir, weightFile=weightFiles[0])
+            self.W1 = Weight(self.filter_shape, initWeights=initWeights, weightsDir=weightsDir, weightFile=weightFiles[1])
+            self.b0 = Weight(self.filter_shape[3], bias_init, std=0, initWeights=initWeights, weightsDir=weightsDir, weightFile=weightFiles[2])
+            self.b1 = Weight(self.filter_shape[3], bias_init, std=0, initWeights=initWeights, weightsDir=weightsDir, weightFile=weightFiles[3])
 
         if lib_conv == 'cudaconvnet':
             self.conv_op = FilterActs(pad=self.padsize, stride=self.convstride,
@@ -220,10 +191,10 @@ class ConvPoolLayer(object):
 
 class FCLayer(object):
 
-    def __init__(self, input, n_in, n_out):
+    def __init__(self, input, n_in, n_out, initWeights = False, weightsDir = None, weightFiles = []):
 
-        self.W = Weight((n_in, n_out), std=0.005)
-        self.b = Weight(n_out, mean=0.1, std=0)
+        self.W = Weight((n_in, n_out), std=0.005, initWeights=initWeights, weightsDir=weightsDir, weightFile=weightFiles[0])
+        self.b = Weight(n_out, mean=0.1, std=0, initWeights=initWeights, weightsDir=weightsDir, weightFile=weightFiles[1])
         self.input = input
         lin_output = T.dot(self.input, self.W.val) + self.b.val
         self.output = T.maximum(lin_output, 0)
@@ -269,10 +240,10 @@ class DropoutLayer(object):
 
 class SoftmaxLayer(object):
 
-    def __init__(self, input, n_in, n_out):
+    def __init__(self, input, n_in, n_out, initWeights = False, weightsDir = None, weightFiles = []):
 
-        self.W = Weight((n_in, n_out))
-        self.b = Weight((n_out,), std=0)
+        self.W = Weight((n_in, n_out), initWeights=initWeights, weightsDir=weightsDir, weightFile=weightFiles[0])
+        self.b = Weight((n_out,), std=0, initWeights=initWeights, weightsDir=weightsDir, weightFile=weightFiles[1])
 
         self.p_y_given_x = T.nnet.softmax(
             T.dot(input, self.W.val) + self.b.val)

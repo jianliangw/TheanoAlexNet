@@ -10,7 +10,8 @@ from layers import ConvPoolLayer, DropoutLayer, FCLayer, SoftmaxLayer
 
 
 class AlexNet(object):
-
+#todo: add mean file subtraction
+#todo: change the fixed sizes of conv layer inputs, eg in layer 2 its 27x27
     def __init__(self, config):
 
         self.config = config
@@ -21,6 +22,9 @@ class AlexNet(object):
         imgWidth = config['imgWidth']
         imgHeight = config['imgHeight']
         initWeights = config['initWeights']  #if we wish to initialize alexnet with some weights. #need to make changes in layers.py to accept initilizing weights
+        if initWeights:
+            weightsDir = config['weightsDir']
+            weightFileTag = config['weightFileTag']
 
         # ##################### BUILD NETWORK ##########################
         # allocate symbolic variables for the data
@@ -41,6 +45,7 @@ class AlexNet(object):
                                         poolsize=3, poolstride=2, 
                                         bias_init=0.0, lrn=True,
                                         lib_conv=lib_conv,
+                                        initWeights=initWeights, weightsDir=weightsDir, weightFiles=['W_0'+weightFileTag, 'b_0'+weightFileTag]
                                         )
             self.layers.append(convpool_layer1)
             params += convpool_layer1.params
@@ -48,12 +53,13 @@ class AlexNet(object):
 
         if useLayers >= 2:
             convpool_layer2 = ConvPoolLayer(input=convpool_layer1.output,
-                                        image_shape=(96, 27, 27, batch_size),
+                                        image_shape=(96, 27, 27, batch_size),    #change from 27 to appropriate value sbased on conv1's output
                                         filter_shape=(96, 5, 5, 256), 
                                         convstride=1, padsize=2, group=2, 
                                         poolsize=3, poolstride=2, 
                                         bias_init=0.1, lrn=True,
                                         lib_conv=lib_conv,
+                                        initWeights=initWeights, weightsDir=weightsDir, weightFiles=['W0_1'+weightFileTag, 'W1_1'+weightFileTag, 'b0_1'+weightFileTag, 'b1_1'+weightFileTag]
                                         )
             self.layers.append(convpool_layer2)
             params += convpool_layer2.params
@@ -67,6 +73,7 @@ class AlexNet(object):
                                         poolsize=1, poolstride=0, 
                                         bias_init=0.0, lrn=False,
                                         lib_conv=lib_conv,
+                                        initWeights=initWeights, weightsDir=weightsDir, weightFiles=['W_2'+weightFileTag, 'b_2'+weightFileTag]
                                         )
             self.layers.append(convpool_layer3)
             params += convpool_layer3.params
@@ -80,6 +87,7 @@ class AlexNet(object):
                                         poolsize=1, poolstride=0, 
                                         bias_init=0.1, lrn=False,
                                         lib_conv=lib_conv,
+                                        initWeights=initWeights, weightsDir=weightsDir, weightFiles=['W0_3'+weightFileTag, 'W1_3'+weightFileTag, 'b0_3'+weightFileTag, 'b1_3'+weightFileTag]
                                         )
             self.layers.append(convpool_layer4)
             params += convpool_layer4.params
@@ -93,6 +101,7 @@ class AlexNet(object):
                                         poolsize=3, poolstride=2, 
                                         bias_init=0.0, lrn=False,
                                         lib_conv=lib_conv,
+                                        initWeights=initWeights, weightsDir=weightsDir, weightFiles=['W0_4'+weightFileTag, 'W1_4'+weightFileTag, 'b0_4'+weightFileTag, 'b1_4'+weightFileTag]
                                         )
             self.layers.append(convpool_layer5)
             params += convpool_layer5.params
@@ -100,21 +109,21 @@ class AlexNet(object):
 
         if useLayers >= 6:
             fc_layer6_input = T.flatten(convpool_layer5.output.dimshuffle(3, 0, 1, 2), 2)
-            fc_layer6 = FCLayer(input=fc_layer6_input, n_in=9216, n_out=4096)
+            fc_layer6 = FCLayer(input=fc_layer6_input, n_in=9216, n_out=4096, initWeights=initWeights, weightsDir=weightsDir, weightFiles=['W_5'+weightFileTag, 'b_5'+weightFileTag])
             self.layers.append(fc_layer6)
             params += fc_layer6.params
             weight_types += fc_layer6.weight_type
             dropout_layer6 = DropoutLayer(fc_layer6.output, n_in=4096, n_out=4096)
 
         if useLayers >= 7:
-            fc_layer7 = FCLayer(input=dropout_layer6.output, n_in=4096, n_out=4096)
+            fc_layer7 = FCLayer(input=dropout_layer6.output, n_in=4096, n_out=4096, initWeights=initWeights, weightsDir=weightsDir, weightFiles=['W_6'+weightFileTag, 'b_6'+weightFileTag])
             self.layers.append(fc_layer7)
             params += fc_layer7.params
             weight_types += fc_layer7.weight_type
             dropout_layer7 = DropoutLayer(fc_layer7.output, n_in=4096, n_out=4096)
 
         if useLayers >= 8:
-            softmax_layer8 = SoftmaxLayer(input=dropout_layer7.output, n_in=4096, n_out=1000)
+            softmax_layer8 = SoftmaxLayer(input=dropout_layer7.output, n_in=4096, n_out=1000, initWeights=initWeights, weightsDir=weightsDir, weightFiles=['W_7'+weightFileTag, 'b_7'+weightFileTag])
             self.layers.append(softmax_layer8)
             params += softmax_layer8.params
             weight_types += softmax_layer8.weight_type

@@ -1,6 +1,7 @@
 import sys
 sys.path.append('./lib')
 import theano
+from theano import In
 theano.config.on_unused_input = 'warn'
 import theano.tensor as T
 
@@ -12,6 +13,7 @@ from layers import ConvPoolLayer, DropoutLayer, FCLayer, SoftmaxLayer
 class AlexNet(object):
 #todo: add mean file subtraction
 #todo: change the fixed sizes of conv layer inputs, eg in layer 2 its 27x27
+#todo: #x is 4d, with 'batch' number of images. meanVal has only '1' in the 'batch' dimension. subtraction wont work
     def __init__(self, config):
 
         self.config = config
@@ -30,6 +32,7 @@ class AlexNet(object):
         # allocate symbolic variables for the data
         # 'rand' is a random array used for random cropping/mirroring of data
         x = T.ftensor4('x')
+        mean = T.ftensor4('mean')
         #y = T.lvector('y')
 
         print '... building the model'
@@ -38,7 +41,7 @@ class AlexNet(object):
         weight_types = []
 
         if useLayers >= 1:
-            convpool_layer1 = ConvPoolLayer(input=x,
+            convpool_layer1 = ConvPoolLayer(input=x-mean,
                                         image_shape=(3, imgHeight, imgWidth, batch_size), 
                                         filter_shape=(3, 11, 11, 96), 
                                         convstride=4, padsize=0, group=1, 
@@ -133,13 +136,16 @@ class AlexNet(object):
         self.output = self.layers[useLayers-1]
         self.params = params
         self.x = x
+        self.mean = mean
         #self.y = y
         self.weight_types = weight_types
         self.batch_size = batch_size
         self.useLayers = useLayers
         self.outLayer = self.layers[useLayers-1]
 
-        self.forwardFunction = theano.function([self.x], [self.outLayer.output])
+        meanVal = np.load(config['mean_file'])
+        meanVal = meanVal[:, :, :, np.newaxis].astype('float32')   #x is 4d, with 'batch' number of images. meanVal has only '1' in the 'batch' dimension. subtraction wont work.
+        self.forwardFunction = theano.function([self.x, In(self.mean, value=meanVal)], [self.outLayer.output])
         
     def forward(self, inp):
         return self.forwardFunction(inp)

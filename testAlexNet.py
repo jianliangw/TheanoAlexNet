@@ -6,6 +6,8 @@ import scipy.misc
 import matplotlib.pyplot as plt
 
 
+#THEANO_FLAGS='mode=FAST_COMPILE' python testAlexNet.py 
+
 with open('config.yaml', 'r') as f:
     config = yaml.load(f)
 img = scipy.misc.imread('cat.jpg')

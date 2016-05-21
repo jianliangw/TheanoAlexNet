@@ -20,6 +20,7 @@ img = scipy.misc.imresize(img, (config['imgHeight'], config['imgWidth']))
 
 
 alexnetModel = AlexNet(config)
+print alexnetModel.forward(img)
 
 print 'done'
 

@@ -1,10 +1,10 @@
 # If want to input None, use !!null
 
 #new additions
-useLayers: 3
+useLayers: 8
 imgWidth: 227
 imgHeight: 227
-batch_size: 256
+batch_size: 1
 initWeights: True
 weightsDir: '/scratch0/sem4/domainAdaptation/code/alexnet/theanoAlexnet/theano_alexnet-master/pretrained/alexnet/parameters_releasing/'
 weightFileTag: '_65'

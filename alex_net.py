@@ -14,6 +14,8 @@ class AlexNet(object):
 #todo: add mean file subtraction
 #todo: change the fixed sizes of conv layer inputs, eg in layer 2 its 27x27
 #todo: #x is 4d, with 'batch' number of images. meanVal has only '1' in the 'batch' dimension. subtraction wont work
+#todo: batch size.
+#todo: switch off drop off during testing. also allow drop out ratio to be set in config file
     def __init__(self, config):
 
         self.config = config
@@ -145,9 +147,17 @@ class AlexNet(object):
 
         meanVal = np.load(config['mean_file'])
         meanVal = meanVal[:, :, :, np.newaxis].astype('float32')   #x is 4d, with 'batch' number of images. meanVal has only '1' in the 'batch' dimension. subtraction wont work.
-        self.forwardFunction = theano.function([self.x, In(self.mean, value=meanVal)], [self.outLayer.output])
+        print meanVal.shape, 'ggggggg'
+        if useLayers >= 8:  #if last layer is softmax, then its output is y_pred
+            finalOut = self.outLayer.y_pred
+        else:
+            finalOut = self.outLayer.output
+        self.forwardFunction = theano.function([self.x, In(self.mean, value=meanVal)], [finalOut])
         
     def forward(self, inp):
+        if len(inp.shape) == 3:  #if a single image was input, convert it into 4d form
+            inp = inp[:, :, :, np.newaxis].astype('float32')
+        print inp.shape, 'ffffffff'
         return self.forwardFunction(inp)
         
     #def train(self, updates, givens):

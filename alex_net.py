@@ -15,7 +15,8 @@ class AlexNet(object):
 #todo: change the fixed sizes of conv layer inputs, eg in layer 2 its 27x27
 #todo: #x is 4d, with 'batch' number of images. meanVal has only '1' in the 'batch' dimension. subtraction wont work ..done
 #todo: batch size. ..done
-#todo: switch off drop off during testing. also allow drop out ratio to be set in config file
+#todo: switch off drop off during testing. also allow drop out ratio to be set in config file ...done
+#todo: try a simple training scenario
     def __init__(self, config, testMode):
 
         self.config = config
@@ -32,8 +33,6 @@ class AlexNet(object):
         prob_drop = config['prob_drop']
 
         # ##################### BUILD NETWORK ##########################
-        # allocate symbolic variables for the data
-        # 'rand' is a random array used for random cropping/mirroring of data
         x = T.ftensor4('x')
         mean = T.ftensor4('mean')
         #y = T.lvector('y')
@@ -146,7 +145,6 @@ class AlexNet(object):
         self.params = params
         self.x = x
         self.mean = mean
-        #self.y = y
         self.weight_types = weight_types
         self.batch_size = batch_size
         self.useLayers = useLayers
@@ -154,9 +152,7 @@ class AlexNet(object):
 
         meanVal = np.load(config['mean_file'])
         meanVal = meanVal[:, :, :, np.newaxis].astype('float32')   #x is 4d, with 'batch' number of images. meanVal has only '1' in the 'batch' dimension. subtraction wont work.
-        #print meanVal.shape, 'ggggggdddg'
         meanVal = np.tile(meanVal,(1,1,1,batch_size))
-        #print meanVal.shape, 'ggggggg'
 
         if useLayers >= 8:  #if last layer is softmax, then its output is y_pred
             finalOut = self.outLayer.y_pred
@@ -165,21 +161,12 @@ class AlexNet(object):
         self.forwardFunction = theano.function([self.x, In(self.mean, value=meanVal)], [finalOut])
         
     def forward(self, imgList):
-        """
-        if len(inp.shape) == 3:  #if a single image was input, convert it into 4d form
-            inp = np.rollaxis(inp, 2)
-            inp = inp[:, :, :, np.newaxis].astype('float32')
-            #print inp.shape, 'ffffffff'
-        print inp.shape, 'ffffffff'
-        return self.forwardFunction(inp)
-        """
         imgBatch = np.zeros([3, self.config['imgHeight'], self.config['imgWidth'], len(imgList)], dtype='float32')
         for imgId in range(len(imgList)):
             img = np.rollaxis(self.readSingleImage(imgList[imgId]), 2)
             img = img.astype('float32')
             imgBatch[:,:,:,imgId] = img
         return self.forwardFunction(imgBatch)
-
 
 
     def readSingleImage(self, imgName):

@@ -3,7 +3,6 @@
 from alex_net import AlexNet
 import yaml
 #import scipy.misc
-import matplotlib.pyplot as plt
 #import numpy as np
 
 
@@ -11,12 +10,7 @@ import matplotlib.pyplot as plt
 
 with open('config.yaml', 'r') as f:
     config = yaml.load(f)
-#img = scipy.misc.imread('cat.jpg')
-#print img.shape   #(360, 480, 3)  : height, width, channel
-#img = scipy.misc.imresize(img, (config['imgHeight'], config['imgWidth']))  #256 256 3
 
-#plt.imshow(img)
-#plt.show()
 
 alexnetModel = AlexNet(config, True)
 
@@ -36,6 +30,9 @@ y = alexnetModel.forward(['cat.jpg','cat.jpg'])
 print x[0] == y[0]
 print x[0]
 print y[0]
+
+
+
 """
 import theano.tensor as T
 import theano, numpy as np

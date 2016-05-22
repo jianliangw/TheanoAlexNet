@@ -1,7 +1,7 @@
 # If want to input None, use !!null
 
 #new additions
-useLayers: 3
+useLayers: 7
 imgWidth: 256
 imgHeight: 256
 batch_size: 2
@@ -9,7 +9,7 @@ initWeights: True
 weightsDir: '/scratch0/sem4/domainAdaptation/code/alexnet/theanoAlexnet/theano_alexnet-master/pretrained/alexnet/parameters_releasing/'
 weightFileTag: '_65'
 mean_file: /scratch0/sem4/domainAdaptation/code/alexnet/theanoAlexnet/theano_alexnet-master/pretrained/alexnet/img_mean.npy
-
+prob_drop: 0.5
 
 
 # Directories

@@ -16,7 +16,7 @@ class AlexNet(object):
 #todo: #x is 4d, with 'batch' number of images. meanVal has only '1' in the 'batch' dimension. subtraction wont work ..done
 #todo: batch size. ..done
 #todo: switch off drop off during testing. also allow drop out ratio to be set in config file
-    def __init__(self, config):
+    def __init__(self, config, testMode):
 
         self.config = config
 
@@ -29,6 +29,7 @@ class AlexNet(object):
         if initWeights:
             weightsDir = config['weightsDir']
             weightFileTag = config['weightFileTag']
+        prob_drop = config['prob_drop']
 
         # ##################### BUILD NETWORK ##########################
         # allocate symbolic variables for the data
@@ -118,14 +119,20 @@ class AlexNet(object):
             self.layers.append(fc_layer6)
             params += fc_layer6.params
             weight_types += fc_layer6.weight_type
-            dropout_layer6 = DropoutLayer(fc_layer6.output, n_in=4096, n_out=4096)
+            if testMode:
+                dropout_layer6 = fc_layer6
+            else:
+                dropout_layer6 = DropoutLayer(fc_layer6.output, n_in=4096, n_out=4096, prob_drop=prob_drop)
 
         if useLayers >= 7:
             fc_layer7 = FCLayer(input=dropout_layer6.output, n_in=4096, n_out=4096, initWeights=initWeights, weightsDir=weightsDir, weightFiles=['W_6'+weightFileTag, 'b_6'+weightFileTag])
             self.layers.append(fc_layer7)
             params += fc_layer7.params
             weight_types += fc_layer7.weight_type
-            dropout_layer7 = DropoutLayer(fc_layer7.output, n_in=4096, n_out=4096)
+            if testMode:
+                dropout_layer6 = fc_layer7
+            else:
+                dropout_layer7 = DropoutLayer(fc_layer7.output, n_in=4096, n_out=4096, prob_drop=prob_drop)
 
         if useLayers >= 8:
             softmax_layer8 = SoftmaxLayer(input=dropout_layer7.output, n_in=4096, n_out=1000, initWeights=initWeights, weightsDir=weightsDir, weightFiles=['W_7'+weightFileTag, 'b_7'+weightFileTag])

@@ -2,9 +2,9 @@
 #sys.path.append('./lib')
 from alex_net import AlexNet
 import yaml
-import scipy.misc
+#import scipy.misc
 import matplotlib.pyplot as plt
-import numpy as np
+#import numpy as np
 
 
 #THEANO_FLAGS='mode=FAST_COMPILE' python testAlexNet.py 
@@ -18,7 +18,7 @@ with open('config.yaml', 'r') as f:
 #plt.imshow(img)
 #plt.show()
 
-alexnetModel = AlexNet(config)
+alexnetModel = AlexNet(config, True)
 
 """
 x = alexnetModel.forward(['cat.jpg'])
@@ -32,8 +32,10 @@ x = alexnetModel.forward(['cat.jpg','cat.jpg'])
 print x[0].shape
 print type(x[0])
 print 'done 2'
-
-
+y = alexnetModel.forward(['cat.jpg','cat.jpg'])
+print x[0] == y[0]
+print x[0]
+print y[0]
 """
 import theano.tensor as T
 import theano, numpy as np

@@ -4,26 +4,34 @@ from alex_net import AlexNet
 import yaml
 import scipy.misc
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 #THEANO_FLAGS='mode=FAST_COMPILE' python testAlexNet.py 
 
 with open('config.yaml', 'r') as f:
     config = yaml.load(f)
-img = scipy.misc.imread('cat.jpg')
-print img.shape   #(360, 480, 3)  : height, width, channel
-img = scipy.misc.imresize(img, (config['imgHeight'], config['imgWidth']))
+#img = scipy.misc.imread('cat.jpg')
+#print img.shape   #(360, 480, 3)  : height, width, channel
+#img = scipy.misc.imresize(img, (config['imgHeight'], config['imgWidth']))  #256 256 3
 
 #plt.imshow(img)
 #plt.show()
 
-
-
 alexnetModel = AlexNet(config)
-x = alexnetModel.forward(img)
+
+"""
+x = alexnetModel.forward(['cat.jpg'])
 print x[0].shape
 print type(x[0])
-print 'done'
+print 'done 1'
+"""
+
+
+x = alexnetModel.forward(['cat.jpg','cat.jpg'])
+print x[0].shape
+print type(x[0])
+print 'done 2'
 
 
 """

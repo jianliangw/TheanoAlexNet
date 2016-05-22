@@ -4,17 +4,17 @@ import theano
 from theano import In
 theano.config.on_unused_input = 'warn'
 import theano.tensor as T
-
+import scipy.misc
 import numpy as np
 
 from layers import ConvPoolLayer, DropoutLayer, FCLayer, SoftmaxLayer
 
 
 class AlexNet(object):
-#todo: add mean file subtraction
+#todo: add mean file subtraction  ..done
 #todo: change the fixed sizes of conv layer inputs, eg in layer 2 its 27x27
-#todo: #x is 4d, with 'batch' number of images. meanVal has only '1' in the 'batch' dimension. subtraction wont work
-#todo: batch size.
+#todo: #x is 4d, with 'batch' number of images. meanVal has only '1' in the 'batch' dimension. subtraction wont work ..done
+#todo: batch size. ..done
 #todo: switch off drop off during testing. also allow drop out ratio to be set in config file
     def __init__(self, config):
 
@@ -147,6 +147,8 @@ class AlexNet(object):
 
         meanVal = np.load(config['mean_file'])
         meanVal = meanVal[:, :, :, np.newaxis].astype('float32')   #x is 4d, with 'batch' number of images. meanVal has only '1' in the 'batch' dimension. subtraction wont work.
+        #print meanVal.shape, 'ggggggdddg'
+        meanVal = np.tile(meanVal,(1,1,1,batch_size))
         #print meanVal.shape, 'ggggggg'
 
         if useLayers >= 8:  #if last layer is softmax, then its output is y_pred
@@ -155,13 +157,28 @@ class AlexNet(object):
             finalOut = self.outLayer.output
         self.forwardFunction = theano.function([self.x, In(self.mean, value=meanVal)], [finalOut])
         
-    def forward(self, inp):
+    def forward(self, imgList):
+        """
         if len(inp.shape) == 3:  #if a single image was input, convert it into 4d form
             inp = np.rollaxis(inp, 2)
             inp = inp[:, :, :, np.newaxis].astype('float32')
             #print inp.shape, 'ffffffff'
-        #print inp.shape, 'ffffffff'
+        print inp.shape, 'ffffffff'
         return self.forwardFunction(inp)
+        """
+        imgBatch = np.zeros([3, self.config['imgHeight'], self.config['imgWidth'], len(imgList)], dtype='float32')
+        for imgId in range(len(imgList)):
+            img = np.rollaxis(self.readSingleImage(imgList[imgId]), 2)
+            img = img.astype('float32')
+            imgBatch[:,:,:,imgId] = img
+        return self.forwardFunction(imgBatch)
+
+
+
+    def readSingleImage(self, imgName):
+        img = scipy.misc.imread(imgName)
+        #print img.shape   #(360, 480, 3)  : height, width, channel
+        return scipy.misc.imresize(img, (self.config['imgHeight'], self.config['imgWidth']))
         
     #def train(self, updates, givens):
     #    self.trainModel = theano.function([], self.outLayer, updates=updates, givens=givens)

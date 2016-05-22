@@ -147,7 +147,8 @@ class AlexNet(object):
 
         meanVal = np.load(config['mean_file'])
         meanVal = meanVal[:, :, :, np.newaxis].astype('float32')   #x is 4d, with 'batch' number of images. meanVal has only '1' in the 'batch' dimension. subtraction wont work.
-        print meanVal.shape, 'ggggggg'
+        #print meanVal.shape, 'ggggggg'
+
         if useLayers >= 8:  #if last layer is softmax, then its output is y_pred
             finalOut = self.outLayer.y_pred
         else:
@@ -156,8 +157,10 @@ class AlexNet(object):
         
     def forward(self, inp):
         if len(inp.shape) == 3:  #if a single image was input, convert it into 4d form
+            inp = np.rollaxis(inp, 2)
             inp = inp[:, :, :, np.newaxis].astype('float32')
-        print inp.shape, 'ffffffff'
+            #print inp.shape, 'ffffffff'
+        #print inp.shape, 'ffffffff'
         return self.forwardFunction(inp)
         
     #def train(self, updates, givens):

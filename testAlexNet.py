@@ -26,11 +26,10 @@ x = alexnetModel.forward(['cat.jpg','cat.jpg'])
 print x[0].shape
 print type(x[0])
 print 'done 2'
-y = alexnetModel.forward(['cat.jpg','cat.jpg'])
-print x[0] == y[0]
-print x[0]
-print y[0]
-
+#y = alexnetModel.forward(['cat.jpg','cat.jpg'])
+#print x[0] == y[0]
+#print x[0]
+#print y[0]
 
 
 """

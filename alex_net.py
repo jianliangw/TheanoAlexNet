@@ -12,7 +12,7 @@ from layers import ConvPoolLayer, DropoutLayer, FCLayer, SoftmaxLayer
 
 class AlexNet(object):
 #todo: add mean file subtraction  ..done
-#todo: change the fixed sizes of conv layer inputs, eg in layer 2 its 27x27
+#todo: change the fixed sizes of conv layer inputs, eg in layer 2 its 27x27   ...done. no modifications necessary
 #todo: #x is 4d, with 'batch' number of images. meanVal has only '1' in the 'batch' dimension. subtraction wont work ..done
 #todo: batch size. ..done
 #todo: switch off drop off during testing. also allow drop out ratio to be set in config file ...done
@@ -44,8 +44,8 @@ class AlexNet(object):
 
         if useLayers >= 1:
             convpool_layer1 = ConvPoolLayer(input=x-mean,
-                                        image_shape=(3, imgHeight, imgWidth, batch_size), 
-                                        filter_shape=(3, 11, 11, 96), 
+                                        image_shape=(3, None, None, batch_size),
+                                        filter_shape=(3, 11, 11, 96),
                                         convstride=4, padsize=0, group=1, 
                                         poolsize=3, poolstride=2, 
                                         bias_init=0.0, lrn=True,
@@ -58,7 +58,7 @@ class AlexNet(object):
 
         if useLayers >= 2:
             convpool_layer2 = ConvPoolLayer(input=convpool_layer1.output,
-                                        image_shape=(96, 27, 27, batch_size),    #change from 27 to appropriate value sbased on conv1's output
+                                        image_shape=(96, None, None, batch_size),    #change from 27 to appropriate value sbased on conv1's output
                                         filter_shape=(96, 5, 5, 256), 
                                         convstride=1, padsize=2, group=2, 
                                         poolsize=3, poolstride=2, 
@@ -72,7 +72,7 @@ class AlexNet(object):
 
         if useLayers >= 3:
             convpool_layer3 = ConvPoolLayer(input=convpool_layer2.output,
-                                        image_shape=(256, 13, 13, batch_size),
+                                        image_shape=(256, None, None, batch_size),
                                         filter_shape=(256, 3, 3, 384), 
                                         convstride=1, padsize=1, group=1, 
                                         poolsize=1, poolstride=0, 
@@ -86,7 +86,7 @@ class AlexNet(object):
 
         if useLayers >= 4:
             convpool_layer4 = ConvPoolLayer(input=convpool_layer3.output,
-                                        image_shape=(384, 13, 13, batch_size),
+                                        image_shape=(384, None, None, batch_size),
                                         filter_shape=(384, 3, 3, 384), 
                                         convstride=1, padsize=1, group=2, 
                                         poolsize=1, poolstride=0, 
@@ -100,7 +100,7 @@ class AlexNet(object):
 
         if useLayers >= 5:
             convpool_layer5 = ConvPoolLayer(input=convpool_layer4.output,
-                                        image_shape=(384, 13, 13, batch_size),
+                                        image_shape=(384, None, None, batch_size),
                                         filter_shape=(384, 3, 3, 256), 
                                         convstride=1, padsize=1, group=2, 
                                         poolsize=3, poolstride=2, 
@@ -153,6 +153,7 @@ class AlexNet(object):
         meanVal = np.load(config['mean_file'])
         meanVal = meanVal[:, :, :, np.newaxis].astype('float32')   #x is 4d, with 'batch' number of images. meanVal has only '1' in the 'batch' dimension. subtraction wont work.
         meanVal = np.tile(meanVal,(1,1,1,batch_size))
+        #meanVal = np.zeros([3,imgHeight,imgWidth,2], dtype='float32')
 
         if useLayers >= 8:  #if last layer is softmax, then its output is y_pred
             finalOut = self.outLayer.y_pred

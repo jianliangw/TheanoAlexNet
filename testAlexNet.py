@@ -14,12 +14,12 @@ with open('config.yaml', 'r') as f:
 
 alexnetModel = AlexNet(config, True)
 
-"""
+
 x = alexnetModel.forward(['cat.jpg'])
 print x[0].shape
 print type(x[0])
 print 'done 1'
-"""
+
 
 
 x = alexnetModel.forward(['cat.jpg','cat.jpg'])

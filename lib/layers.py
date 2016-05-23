@@ -50,7 +50,7 @@ class ConvPoolLayer(object):
                  lib_conv='cudnn', initWeights = False, weightsDir = '', weightFiles = []
                  ):
         '''
-        lib_conv can be cudnn (recommended)or cudaconvnet
+        lib_conv can be cudnn (recommended) or cudaconvnet
         '''
 
         self.filter_size = filter_shape

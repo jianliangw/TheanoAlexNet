@@ -24,8 +24,8 @@ class AlexNet(object):
         batch_size = config['batch_size']
         lib_conv = config['lib_conv']
         useLayers = config['useLayers']
-        imgWidth = config['imgWidth']
-        imgHeight = config['imgHeight']
+        #imgWidth = config['imgWidth']
+        #imgHeight = config['imgHeight']
         initWeights = config['initWeights']  #if we wish to initialize alexnet with some weights. #need to make changes in layers.py to accept initilizing weights
         if initWeights:
             weightsDir = config['weightsDir']
@@ -153,6 +153,7 @@ class AlexNet(object):
         meanVal = np.load(config['mean_file'])
         meanVal = meanVal[:, :, :, np.newaxis].astype('float32')   #x is 4d, with 'batch' number of images. meanVal has only '1' in the 'batch' dimension. subtraction wont work.
         meanVal = np.tile(meanVal,(1,1,1,batch_size))
+        self.meanVal = meanVal
         #meanVal = np.zeros([3,imgHeight,imgWidth,2], dtype='float32')
 
         if useLayers >= 8:  #if last layer is softmax, then its output is y_pred
@@ -167,7 +168,11 @@ class AlexNet(object):
             img = np.rollaxis(self.readSingleImage(imgList[imgId]), 2)
             img = img.astype('float32')
             imgBatch[:,:,:,imgId] = img
-        return self.forwardFunction(imgBatch)
+        #if len(imgList) == self.batch_size: #if number of images is same as batchsize, use the default
+        #    return self.forwardFunction(imgBatch)
+        #else:
+        #    return self.forwardFunction(imgBatch, self.meanVal[:,:,:,0:len(imgList)])
+        return self.forwardFunction(imgBatch, self.meanVal[:,:,:,0:len(imgList)])
 
 
     def readSingleImage(self, imgName):
